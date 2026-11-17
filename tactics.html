@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>VolleyPlan 🏐 互動式戰術板與輪轉模擬器</title>
+  <title>VolleyPlan 🏐 自由拖曳戰術板與戰術庫</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -32,12 +33,19 @@
       transform: translate(2px, 2px);
       box-shadow: 1px 1px 0px #1E293B;
     }
-    .player-badge {
-      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    .draggable-piece {
+      touch-action: none;
+      cursor: grab;
+      user-select: none;
+    }
+    .draggable-piece:active {
+      cursor: grabbing;
+      transform: translate(-50%, -50%) scale(1.12);
+      z-index: 30;
     }
   </style>
 </head>
-<body class="bg-cream text-ink font-sans min-h-screen pb-16 select-none">
+<body class="bg-cream text-ink font-sans min-h-screen pb-20 select-none">
 
   <!-- 頂部導覽列 -->
   <header class="max-w-md mx-auto pt-6 px-4">
@@ -56,245 +64,322 @@
 
   <main class="max-w-md mx-auto px-4 mt-4 space-y-4">
 
-    <!-- 1. 互動式戰術板模擬器 -->
+    <!-- 1. 自由拖曳排球戰術板 -->
     <section class="bg-white border-2 border-ink rounded-2xl p-4 shadow-pop">
-      <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center justify-between mb-2">
         <div>
-          <span class="text-[10px] font-black px-2 py-0.5 rounded-full border border-ink bg-vBlue">互動戰術板</span>
-          <h2 class="text-base font-black mt-1">📋 雙舉陣型（4-2）輪轉與站位模擬</h2>
+          <span class="text-[10px] font-black px-2 py-0.5 rounded-full border border-ink bg-vBlue">自由拖曳戰術板</span>
+          <h2 class="text-base font-black mt-1">📋 拖曳球員與排球模擬跑位</h2>
         </div>
-      </div>
-
-      <!-- 模式切換鈕 -->
-      <div class="grid grid-cols-2 gap-2 mb-3">
-        <button onclick="setCourtMode('serve')" id="mode-serve" class="py-1.5 px-2 rounded-xl border-2 border-ink text-xs font-black bg-vGreen shadow-pop-sm btn-pop">
-          🔄 發球前輪轉站位
-        </button>
-        <button onclick="setCourtMode('defense')" id="mode-defense" class="py-1.5 px-2 rounded-xl border-2 border-ink text-xs font-black bg-white shadow-pop-sm btn-pop">
-          🛡️ 換位後防守聯防
+        <button onclick="exportBoardImage()" class="bg-vGreen border-2 border-ink px-2.5 py-1.5 rounded-xl text-xs font-black shadow-pop-sm btn-pop">
+          🖼️ 存成圖卡
         </button>
       </div>
 
-      <!-- 6 輪切換按鈕列 -->
-      <div id="rotationSelector" class="grid grid-cols-6 gap-1.5 mb-3">
-        <button onclick="setRotation(1)" id="rot-1" class="rot-btn py-1 rounded-lg border-2 border-ink text-xs font-black bg-vYellow shadow-pop-sm btn-pop">R1</button>
-        <button onclick="setRotation(2)" id="rot-2" class="rot-btn py-1 rounded-lg border-2 border-ink text-xs font-black bg-white shadow-pop-sm btn-pop">R2</button>
-        <button onclick="setRotation(3)" id="rot-3" class="rot-btn py-1 rounded-lg border-2 border-ink text-xs font-black bg-white shadow-pop-sm btn-pop">R3</button>
-        <button onclick="setRotation(4)" id="rot-4" class="rot-btn py-1 rounded-lg border-2 border-ink text-xs font-black bg-white shadow-pop-sm btn-pop">R4</button>
-        <button onclick="setRotation(5)" id="rot-5" class="rot-btn py-1 rounded-lg border-2 border-ink text-xs font-black bg-white shadow-pop-sm btn-pop">R5</button>
-        <button onclick="setRotation(6)" id="rot-6" class="rot-btn py-1 rounded-lg border-2 border-ink text-xs font-black bg-white shadow-pop-sm btn-pop">R6</button>
+      <p class="text-[11px] font-bold text-slate-500 mb-2.5">💡 直接按住球場上的球員徽章或 🏐 即可自由拖曳擺位！</p>
+
+      <!-- 快速預設底稿按鈕 -->
+      <div class="grid grid-cols-3 gap-1.5 mb-3">
+        <button onclick="applyPreset('base')" class="py-1.5 px-2 rounded-xl border-2 border-ink text-[11px] font-black bg-slate-100 hover:bg-vYellow shadow-pop-sm btn-pop">
+          🔄 基本輪轉位
+        </button>
+        <button onclick="applyPreset('receive')" class="py-1.5 px-2 rounded-xl border-2 border-ink text-[11px] font-black bg-slate-100 hover:bg-vGreen shadow-pop-sm btn-pop">
+          📥 W型接發球
+        </button>
+        <button onclick="applyPreset('block')" class="py-1.5 px-2 rounded-xl border-2 border-ink text-[11px] font-black bg-slate-100 hover:bg-vOrange shadow-pop-sm btn-pop">
+          🛡️ 雙人攔網聯防
+        </button>
       </div>
 
-      <!-- 排球場視覺化畫布 -->
-      <div class="relative w-full aspect-[4/3] bg-orange-100 border-4 border-ink rounded-2xl overflow-hidden shadow-inner">
-        <!-- 球網 (頂部) -->
-        <div class="w-full h-3 bg-ink flex items-center justify-center">
-          <span class="text-[9px] font-black text-vYellow tracking-widest">━━━ 球網 NET ━━━</span>
+      <!-- 排球場視覺化畫布（截圖範圍） -->
+      <div id="tacticBoardCapture" class="bg-cream p-2 rounded-2xl border-2 border-ink">
+        <div class="flex justify-between items-center px-1 mb-1.5">
+          <span id="boardTitleDisplay" class="text-xs font-black text-ink">目前戰術：基本輪轉站位</span>
+          <span class="text-[10px] font-black text-slate-400">VolleyPlan 戰術板</span>
         </div>
 
-        <!-- 三米攻擊線 -->
-        <div class="absolute top-[36%] left-0 right-0 border-b-2 border-dashed border-ink/50 flex justify-between px-2">
-          <span class="text-[9px] font-black text-ink/50">前排攻擊區</span>
-          <span class="text-[9px] font-black text-ink/50">3M 線</span>
+        <div id="courtCanvas" class="relative w-full aspect-[4/3] bg-orange-100 border-4 border-ink rounded-xl overflow-hidden">
+          <!-- 球網 -->
+          <div class="w-full h-3.5 bg-ink flex items-center justify-center">
+            <span class="text-[9px] font-black text-vYellow tracking-widest">━━━ 球網 NET ━━━</span>
+          </div>
+
+          <!-- 三米攻擊線 -->
+          <div class="absolute top-[36%] left-0 right-0 border-b-2 border-dashed border-ink/50 flex justify-between px-2 pointer-events-none">
+            <span class="text-[9px] font-black text-ink/50">前排攻擊區</span>
+            <span class="text-[9px] font-black text-ink/50">3M 線</span>
+          </div>
+
+          <!-- 球場位置浮水印 -->
+          <div class="absolute top-[20%] left-[18%] -translate-x-1/2 -translate-y-1/2 text-lg font-black text-ink/10 pointer-events-none">4</div>
+          <div class="absolute top-[20%] left-[50%] -translate-x-1/2 -translate-y-1/2 text-lg font-black text-ink/10 pointer-events-none">3</div>
+          <div class="absolute top-[20%] left-[82%] -translate-x-1/2 -translate-y-1/2 text-lg font-black text-ink/10 pointer-events-none">2</div>
+          <div class="absolute top-[72%] left-[18%] -translate-x-1/2 -translate-y-1/2 text-lg font-black text-ink/10 pointer-events-none">5</div>
+          <div class="absolute top-[72%] left-[50%] -translate-x-1/2 -translate-y-1/2 text-lg font-black text-ink/10 pointer-events-none">6</div>
+          <div class="absolute top-[72%] left-[82%] -translate-x-1/2 -translate-y-1/2 text-lg font-black text-ink/10 pointer-events-none">1</div>
+
+          <!-- 可自由拖曳的球員與排球容器 -->
+          <div id="piecesLayer" class="relative w-full h-[calc(100%-14px)]"></div>
         </div>
 
-        <!-- 後排防守區標示 -->
-        <div class="absolute bottom-1.5 right-2 text-[9px] font-black text-ink/40">後排防守區</div>
-
-        <!-- 6 名球員動態定位點 -->
-        <div id="courtPlayers" class="relative w-full h-[calc(100%-12px)]"></div>
-      </div>
-
-      <!-- 動態戰術解說框 -->
-      <div class="mt-3 bg-cream border-2 border-ink rounded-xl p-3">
-        <div id="tacticHeadline" class="text-xs font-black text-ink mb-1">第 1 輪（R1）：舉球 S1 在後排 1 號位發球</div>
-        <p id="tacticDetail" class="text-xs font-medium text-slate-700 leading-relaxed">
-          前排由「舉球 S2（2號位）、攔中 MB1（3號位）、主攻 OH1（4號位）」組成完美進攻陣型，發球過網後無需大幅換位即可直接攔網！
-        </p>
-      </div>
-
-      <!-- 圖例說明 -->
-      <div class="flex flex-wrap gap-2 mt-3 pt-2 border-t border-slate-200 text-[10px] font-black">
-        <span class="px-2 py-0.5 rounded bg-vYellow border border-ink">S 舉球員</span>
-        <span class="px-2 py-0.5 rounded bg-vOrange border border-ink">OH 主攻手</span>
-        <span class="px-2 py-0.5 rounded bg-vBlue border border-ink">MB 攔中</span>
+        <!-- 戰術備註顯示區 -->
+        <div id="boardNoteDisplay" class="mt-2 bg-white border-2 border-ink rounded-xl p-2 text-xs font-bold text-slate-700">
+          備註：拖曳上方球員到指定落點，並在下方輸入跑位說明即可儲存成專屬戰術！
+        </div>
       </div>
     </section>
 
-    <!-- 2. 系隊實戰關鍵口訣卡片 -->
-    <section class="bg-white border-2 border-ink rounded-2xl p-4 shadow-pop space-y-2.5">
-      <h3 class="text-sm font-black flex items-center gap-1.5"><span>⚡</span> 系隊實戰三大防呆原則</h3>
-      <div class="bg-cream border-2 border-ink rounded-xl p-2.5 text-xs font-bold">
-        1️⃣ <strong>越位檢查口訣：</strong>發球瞬間「前後不交錯（2對1、3對6、4對5），左右不重疊（4-3-2、5-6-1）」。
+    <!-- 2. 新增 / 儲存自訂戰術表單 -->
+    <section class="bg-white border-2 border-ink rounded-2xl p-4 shadow-pop space-y-3">
+      <h3 class="text-sm font-black flex items-center gap-1.5"><span>✏️</span> 儲存目前擺位為新戰術</h3>
+      <div>
+        <label class="block text-xs font-black text-slate-500 mb-1">戰術名稱</label>
+        <input type="text" id="tacticNameInput" placeholder="例如：第二輪前排快攻掩護、防守反擊站位" class="w-full bg-slate-50 border-2 border-ink rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none">
       </div>
-      <div class="bg-cream border-2 border-ink rounded-xl p-2.5 text-xs font-bold">
-        2️⃣ <strong>雙舉插上原則：</strong>永遠由「前排舉球」負責舉第二球，後排舉球專心守好 1 號位直線與吊球。
+      <div>
+        <label class="block text-xs font-black text-slate-500 mb-1">跑位口訣 / 細節說明</label>
+        <textarea id="tacticNoteInput" rows="2" placeholder="寫下舉球插上路線、攔網併步或後排補位重點..." class="w-full bg-slate-50 border-2 border-ink rounded-xl p-2.5 text-xs font-medium focus:outline-none"></textarea>
       </div>
-      <div class="bg-cream border-2 border-ink rounded-xl p-2.5 text-xs font-bold">
-        3️⃣ <strong>攔網補位分工：</strong>前排雙人併步起跳攔網時，未參與攔網的前排主攻手立刻退至三米線撈吊球。
+      <button onclick="saveCustomTactic()" class="w-full bg-vYellow border-2 border-ink py-2.5 rounded-xl font-black text-xs shadow-pop btn-pop">
+        💾 儲存此戰術到下方戰術庫
+      </button>
+    </section>
+
+    <!-- 3. 我的系隊戰術庫清單 -->
+    <section class="space-y-2.5">
+      <div class="flex justify-between items-center px-1">
+        <span class="text-xs font-black text-slate-500">📚 已儲存的系隊戰術庫（點擊載入戰術板）</span>
       </div>
+      <div id="savedTacticsList" class="space-y-2"></div>
     </section>
 
   </main>
 
-  <footer class="max-w-md mx-auto px-4 mt-8 text-center">
-    <p class="text-[11px] font-black text-slate-400">VolleyPlan • 依 AGENTS.md 規範延伸建置</p>
-  </footer>
+  <!-- Toast 提示 -->
+  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-ink text-white text-xs font-bold px-4 py-2 rounded-full border-2 border-vYellow shadow-pop-lg transition-all duration-300 opacity-0 pointer-events-none z-50">
+    提示訊息
+  </div>
 
   <script>
-    let currentMode = 'serve';
-    let currentRotation = 1;
-
-    // 座標定義：(left %, top %)
-    const POSITIONS = {
-      p4: { x: 18, y: 18 }, // 前左 4號位
-      p3: { x: 50, y: 18 }, // 前中 3號位
-      p2: { x: 82, y: 18 }, // 前右 2號位
-      p5: { x: 18, y: 68 }, // 後左 5號位
-      p6: { x: 50, y: 74 }, // 後中 6號位
-      p1: { x: 82, y: 68 }  // 後右 1號位
-    };
-
-    const ROTATION_DATA = {
-      1: {
-        title: '第 1 輪（R1）：S1 位於 1 號位發球',
-        detail: '前排剛好是「OH1(4) - MB1(3) - S2(2)」標準攻擊站位！發球後前排完全不用換位，後排 S1 留守 1 號位防守即可。',
-        players: [
-          { role: 'OH1', color: 'bg-vOrange', pos: 'p4' },
-          { role: 'MB1', color: 'bg-vBlue', pos: 'p3' },
-          { role: 'S2',  color: 'bg-vYellow', pos: 'p2' },
-          { role: 'MB2', color: 'bg-vBlue', pos: 'p5' },
-          { role: 'OH2', color: 'bg-vOrange', pos: 'p6' },
-          { role: 'S1',  color: 'bg-vYellow', pos: 'p1' }
+    // 預設棋子狀態
+    const PRESETS = {
+      base: {
+        title: '基本輪轉站位（R1 雙舉）',
+        note: '前排 OH1(4) - MB1(3) - S2(2) 已在進攻位置，發球過網後無需大幅換位。',
+        pieces: [
+          { id: 'p_oh1', label: 'OH1', color: 'bg-vOrange', x: 18, y: 20 },
+          { id: 'p_mb1', label: 'MB1', color: 'bg-vBlue',   x: 50, y: 20 },
+          { id: 'p_s2',  label: 'S2',  color: 'bg-vYellow', x: 82, y: 20 },
+          { id: 'p_mb2', label: 'MB2', color: 'bg-vBlue',   x: 18, y: 72 },
+          { id: 'p_oh2', label: 'OH2', color: 'bg-vOrange', x: 50, y: 74 },
+          { id: 'p_s1',  label: 'S1',  color: 'bg-vYellow', x: 82, y: 72 },
+          { id: 'ball',  label: '🏐',  color: 'bg-white',   x: 50, y: 46 }
         ]
       },
-      2: {
-        title: '第 2 輪（R2）：OH1 輪轉至 1 號位發球',
-        detail: '前排為「MB1(4) - S2(3) - S1(2)」。發球過網瞬間，前排 S2 需迅速與 MB1 交換位置，由 S2 負責二號位舉球、MB1 回到中間攔網。',
-        players: [
-          { role: 'MB1', color: 'bg-vBlue', pos: 'p4' },
-          { role: 'S2',  color: 'bg-vYellow', pos: 'p3' },
-          { role: 'OH2', color: 'bg-vOrange', pos: 'p2' },
-          { role: 'S1',  color: 'bg-vYellow', pos: 'p5' },
-          { role: 'MB2', color: 'bg-vBlue', pos: 'p6' },
-          { role: 'OH1', color: 'bg-vOrange', pos: 'p1' }
+      receive: {
+        title: 'W型五人接發球陣型',
+        note: '前排舉球 S2 貼網不接一傳，其餘五人組成 W 型防線，接發後 S2 迅速插上二號位舉球。',
+        pieces: [
+          { id: 'p_oh1', label: 'OH1', color: 'bg-vOrange', x: 20, y: 45 },
+          { id: 'p_mb1', label: 'MB1', color: 'bg-vBlue',   x: 50, y: 55 },
+          { id: 'p_s2',  label: 'S2',  color: 'bg-vYellow', x: 75, y: 14 },
+          { id: 'p_mb2', label: 'MB2', color: 'bg-vBlue',   x: 22, y: 80 },
+          { id: 'p_oh2', label: 'OH2', color: 'bg-vOrange', x: 78, y: 80 },
+          { id: 'p_s1',  label: 'S1',  color: 'bg-vYellow', x: 80, y: 45 },
+          { id: 'ball',  label: '🏐',  color: 'bg-white',   x: 50, y: 12 }
         ]
       },
-      3: {
-        title: '第 3 輪（R3）：MB1 輪轉至 1 號位發球',
-        detail: '前排「S2(4) - OH2(3) - MB2(2)」。發球後前排大換位：S2 衝往 2 號位舉球，OH2 退至 4 號位主攻，MB2 移至 3 號位攔中。',
-        players: [
-          { role: 'S2',  color: 'bg-vYellow', pos: 'p4' },
-          { role: 'OH2', color: 'bg-vOrange', pos: 'p3' },
-          { role: 'MB2', color: 'bg-vBlue', pos: 'p2' },
-          { role: 'OH1', color: 'bg-vOrange', pos: 'p5' },
-          { role: 'S1',  color: 'bg-vYellow', pos: 'p6' },
-          { role: 'MB1', color: 'bg-vBlue', pos: 'p1' }
-        ]
-      },
-      4: {
-        title: '第 4 輪（R4）：S2 輪轉至 1 號位發球',
-        detail: '前排「OH2(4) - MB2(3) - S1(2)」，與第 1 輪形成完美對稱！前排攻擊陣型已就定位，發球後無需換位。',
-        players: [
-          { role: 'OH2', color: 'bg-vOrange', pos: 'p4' },
-          { role: 'MB2', color: 'bg-vBlue', pos: 'p3' },
-          { role: 'S1',  color: 'bg-vYellow', pos: 'p2' },
-          { role: 'MB1', color: 'bg-vBlue', pos: 'p5' },
-          { role: 'OH1', color: 'bg-vOrange', pos: 'p6' },
-          { role: 'S2',  color: 'bg-vYellow', pos: 'p1' }
-        ]
-      },
-      5: {
-        title: '第 5 輪（R5）：OH2 輪轉至 1 號位發球',
-        detail: '前排「MB2(4) - S1(3) - OH1(2)」。發球後 S1 與 OH1 換位至 2 號位舉球，MB2 移回 3 號位準備攔網。',
-        players: [
-          { role: 'MB2', color: 'bg-vBlue', pos: 'p4' },
-          { role: 'S1',  color: 'bg-vYellow', pos: 'p3' },
-          { role: 'OH1', color: 'bg-vOrange', pos: 'p2' },
-          { role: 'S2',  color: 'bg-vYellow', pos: 'p5' },
-          { role: 'MB1', color: 'bg-vBlue', pos: 'p6' },
-          { role: 'OH2', color: 'bg-vOrange', pos: 'p1' }
-        ]
-      },
-      6: {
-        title: '第 6 輪（R6）：MB2 輪轉至 1 號位發球',
-        detail: '前排「S1(4) - OH1(3) - MB1(2)」。發球瞬間 S1 跑向 2 號位舉球，OH1 移至 4 號位，MB1 回到 3 號位攔中。',
-        players: [
-          { role: 'S1',  color: 'bg-vYellow', pos: 'p4' },
-          { role: 'OH1', color: 'bg-vOrange', pos: 'p3' },
-          { role: 'MB1', color: 'bg-vBlue', pos: 'p2' },
-          { role: 'OH2', color: 'bg-vOrange', pos: 'p5' },
-          { role: 'S2',  color: 'bg-vYellow', pos: 'p6' },
-          { role: 'MB2', color: 'bg-vBlue', pos: 'p1' }
+      block: {
+        title: '四號位雙人攔網＋後排聯防',
+        note: 'MB1 併步靠攏 S2 形成雙人攔網封鎖對手主攻，OH1 退至三米線保護吊球，後排三人守重扣。',
+        pieces: [
+          { id: 'p_oh1', label: 'OH1', color: 'bg-vOrange', x: 25, y: 42 },
+          { id: 'p_mb1', label: 'MB1', color: 'bg-vBlue',   x: 72, y: 13 },
+          { id: 'p_s2',  label: 'S2',  color: 'bg-vYellow', x: 84, y: 13 },
+          { id: 'p_mb2', label: 'MB2', color: 'bg-vBlue',   x: 20, y: 76 },
+          { id: 'p_oh2', label: 'OH2', color: 'bg-vOrange', x: 52, y: 82 },
+          { id: 'p_s1',  label: 'S1',  color: 'bg-vYellow', x: 82, y: 68 },
+          { id: 'ball',  label: '🏐',  color: 'bg-white',   x: 80, y: 5 }
         ]
       }
     };
 
-    const DEFENSE_FORMATION = {
-      title: '🛡️ 換位完成：標準防守聯防陣型（心形／邊線防守）',
-      detail: '所有輪次發球過網後，前排固定由「主攻(4) - 攔中(3) - 舉球(2)」負責網前攔網，後排「5號位、6號位、1號位」退至底線前兩步守重扣與長球。',
-      players: [
-        { role: 'OH 主攻', color: 'bg-vOrange', pos: 'p4' },
-        { role: 'MB 攔中', color: 'bg-vBlue', pos: 'p3' },
-        { role: 'S 前舉',  color: 'bg-vYellow', pos: 'p2' },
-        { role: '後排左',  color: 'bg-vBlue', pos: 'p5' },
-        { role: '後排中',  color: 'bg-vOrange', pos: 'p6' },
-        { role: 'S 後舉',  color: 'bg-vYellow', pos: 'p1' }
-      ]
-    };
+    let currentPieces = JSON.parse(JSON.stringify(PRESETS.base.pieces));
+    let savedTactics = [];
 
-    function setCourtMode(mode) {
-      currentMode = mode;
-      const btnServe = document.getElementById('mode-serve');
-      const btnDef = document.getElementById('mode-defense');
-      const rotBar = document.getElementById('rotationSelector');
-
-      if (mode === 'serve') {
-        btnServe.classList.replace('bg-white', 'bg-vGreen');
-        btnDef.classList.replace('bg-vGreen', 'bg-white');
-        rotBar.classList.remove('opacity-40', 'pointer-events-none');
-      } else {
-        btnDef.classList.replace('bg-white', 'bg-vGreen');
-        btnServe.classList.replace('bg-vGreen', 'bg-white');
-        rotBar.classList.add('opacity-40', 'pointer-events-none');
+    function loadTactics() {
+      try {
+        const raw = localStorage.getItem('volleyplan_tactics_v1');
+        if (raw) {
+          savedTactics = JSON.parse(raw);
+        } else {
+          savedTactics = [
+            { id: 't_default_1', ...PRESETS.receive },
+            { id: 't_default_2', ...PRESETS.block }
+          ];
+          saveTacticsToStorage();
+        }
+      } catch (e) {
+        savedTactics = [];
       }
-      renderCourt();
     }
 
-    function setRotation(rot) {
-      currentRotation = rot;
-      document.querySelectorAll('.rot-btn').forEach(btn => {
-        btn.classList.remove('bg-vYellow');
-        btn.classList.add('bg-white');
-      });
-      const active = document.getElementById(`rot-${rot}`);
-      if (active) {
-        active.classList.remove('bg-white');
-        active.classList.add('bg-vYellow');
-      }
-      renderCourt();
+    function saveTacticsToStorage() {
+      try {
+        localStorage.setItem('volleyplan_tactics_v1', JSON.stringify(savedTactics));
+      } catch (e) {}
     }
 
-    function renderCourt() {
-      const container = document.getElementById('courtPlayers');
-      const data = currentMode === 'serve' ? ROTATION_DATA[currentRotation] : DEFENSE_FORMATION;
+    function applyPreset(key) {
+      const p = PRESETS[key];
+      if (!p) return;
+      currentPieces = JSON.parse(JSON.stringify(p.pieces));
+      document.getElementById('boardTitleDisplay').innerText = `目前戰術：${p.title}`;
+      document.getElementById('boardNoteDisplay').innerText = `備註：${p.note}`;
+      document.getElementById('tacticNameInput').value = p.title;
+      document.getElementById('tacticNoteInput').value = p.note;
+      renderPieces();
+      showToast(`已載入「${p.title}」🏐`);
+    }
 
-      document.getElementById('tacticHeadline').innerText = data.title;
-      document.getElementById('tacticDetail').innerText = data.detail;
+    function renderPieces() {
+      const layer = document.getElementById('piecesLayer');
+      layer.innerHTML = '';
 
-      container.innerHTML = '';
-      data.players.forEach(p => {
-        const coord = POSITIONS[p.pos];
-        const badge = document.createElement('div');
-        badge.className = `player-badge absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-xl border-2 border-ink font-black text-xs shadow-pop-sm ${p.color}`;
-        badge.style.left = `${coord.x}%`;
-        badge.style.top = `${coord.y}%`;
-        badge.innerText = p.role;
-        container.appendChild(badge);
+      currentPieces.forEach((piece, idx) => {
+        const el = document.createElement('div');
+        const isBall = piece.id === 'ball';
+        el.className = `draggable-piece absolute -translate-x-1/2 -translate-y-1/2 ${isBall ? 'w-8 h-8 rounded-full flex items-center justify-center text-base' : 'px-2.5 py-1 rounded-xl text-xs font-black'} border-2 border-ink shadow-pop-sm ${piece.color}`;
+        el.style.left = `${piece.x}%`;
+        el.style.top = `${piece.y}%`;
+        el.innerText = piece.label;
+
+        // 支援滑鼠與觸控自由拖曳 (Pointer Events)
+        el.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          el.setPointerCapture(e.pointerId);
+          const rect = layer.getBoundingClientRect();
+
+          const onMove = (moveEvt) => {
+            let nx = ((moveEvt.clientX - rect.left) / rect.width) * 100;
+            let ny = ((moveEvt.clientY - rect.top) / rect.height) * 100;
+            nx = Math.max(6, Math.min(94, nx));
+            ny = Math.max(6, Math.min(94, ny));
+            piece.x = Math.round(nx);
+            piece.y = Math.round(ny);
+            el.style.left = `${piece.x}%`;
+            el.style.top = `${piece.y}%`;
+          };
+
+          const onUp = (upEvt) => {
+            el.releasePointerCapture(upEvt.pointerId);
+            el.removeEventListener('pointermove', onMove);
+            el.removeEventListener('pointerup', onUp);
+          };
+
+          el.addEventListener('pointermove', onMove);
+          el.addEventListener('pointerup', onUp);
+        });
+
+        layer.appendChild(el);
       });
     }
 
-    window.addEventListener('DOMContentLoaded', renderCourt);
+    function saveCustomTactic() {
+      const title = document.getElementById('tacticNameInput').value.trim();
+      const note = document.getElementById('tacticNoteInput').value.trim();
+      if (!title) {
+        alert('請先輸入戰術名稱！');
+        return;
+      }
+
+      const newTactic = {
+        id: 't_' + Date.now(),
+        title,
+        note: note || '無額外文字備註',
+        pieces: JSON.parse(JSON.stringify(currentPieces))
+      };
+
+      savedTactics.unshift(newTactic);
+      saveTacticsToStorage();
+      document.getElementById('boardTitleDisplay').innerText = `目前戰術：${title}`;
+      document.getElementById('boardNoteDisplay').innerText = `備註：${newTactic.note}`;
+      renderSavedTactics();
+      showToast('已儲存到你的戰術庫！💾');
+    }
+
+    function loadSavedTactic(id) {
+      const target = savedTactics.find(t => t.id === id);
+      if (!target) return;
+      currentPieces = JSON.parse(JSON.stringify(target.pieces));
+      document.getElementById('boardTitleDisplay').innerText = `目前戰術：${target.title}`;
+      document.getElementById('boardNoteDisplay').innerText = `備註：${target.note}`;
+      document.getElementById('tacticNameInput').value = target.title;
+      document.getElementById('tacticNoteInput').value = target.note;
+      renderPieces();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showToast(`已載入戰術「${target.title}」📋`);
+    }
+
+    function deleteSavedTactic(id, e) {
+      e.stopPropagation();
+      savedTactics = savedTactics.filter(t => t.id !== id);
+      saveTacticsToStorage();
+      renderSavedTactics();
+      showToast('已刪除該戰術 🗑️');
+    }
+
+    function renderSavedTactics() {
+      const list = document.getElementById('savedTacticsList');
+      list.innerHTML = '';
+
+      if (savedTactics.length === 0) {
+        list.innerHTML = `<div class="text-center py-6 text-xs font-bold text-slate-400 bg-white border-2 border-dashed border-ink rounded-2xl">目前沒有儲存的戰術，拖曳球員後在上方儲存吧！</div>`;
+        return;
+      }
+
+      savedTactics.forEach(item => {
+        const card = document.createElement('div');
+        card.onclick = () => loadSavedTactic(item.id);
+        card.className = 'p-3 bg-white border-2 border-ink rounded-xl shadow-pop-sm flex items-center justify-between gap-2 cursor-pointer hover:bg-vYellow/20 transition-colors';
+        card.innerHTML = `
+          <div class="flex-1 min-w-0">
+            <div class="text-xs font-black truncate">📌 ${item.title}</div>
+            <div class="text-[11px] font-medium text-slate-500 truncate mt-0.5">${item.note}</div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-black px-2 py-1 rounded-lg bg-vBlue/30 border border-ink">載入</span>
+            <button onclick="deleteSavedTactic('${item.id}', event)" class="text-slate-400 hover:text-rose-500 font-black px-1.5 py-1 text-xs">✕</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    function exportBoardImage() {
+      showToast('正在產生戰術圖卡...⏳');
+      const target = document.getElementById('tacticBoardCapture');
+      html2canvas(target, { scale: 2, backgroundColor: '#FDFBF7' }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `VolleyPlan_戰術板.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast('戰術圖卡已下載！🖼️');
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => toast.classList.add('opacity-0', 'pointer-events-none'), 2200);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadTactics();
+      renderPieces();
+      renderSavedTactics();
+    });
   </script>
 </body>
 </html>
