@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>VolleyPlan 🏐 系隊站位與輪轉戰術指南</title>
+  <title>VolleyPlan 🏐 互動式戰術板與輪轉模擬器</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -32,11 +32,14 @@
       transform: translate(2px, 2px);
       box-shadow: 1px 1px 0px #1E293B;
     }
+    .player-badge {
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
   </style>
 </head>
 <body class="bg-cream text-ink font-sans min-h-screen pb-16 select-none">
 
-  <!-- 頂部導覽列（依 AGENTS.md 規範與 index.html 保持一致） -->
+  <!-- 頂部導覽列 -->
   <header class="max-w-md mx-auto pt-6 px-4">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
@@ -53,55 +56,83 @@
 
   <main class="max-w-md mx-auto px-4 mt-4 space-y-4">
 
-    <!-- 頁面標題卡 -->
-    <section class="bg-vBlue/30 border-2 border-ink rounded-2xl p-4 shadow-pop">
-      <span class="text-[10px] font-black px-2 py-0.5 rounded-full border border-ink bg-white">系隊戰術手冊</span>
-      <h2 class="text-lg font-black mt-1.5">📋 基礎陣型與輪轉觀念</h2>
-      <p class="text-xs font-bold text-slate-700 mt-1">依照 AGENTS.md 視覺規範擴充之戰術教學分頁，供練球前快速統一全隊站位共識。</p>
+    <!-- 1. 互動式戰術板模擬器 -->
+    <section class="bg-white border-2 border-ink rounded-2xl p-4 shadow-pop">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <span class="text-[10px] font-black px-2 py-0.5 rounded-full border border-ink bg-vBlue">互動戰術板</span>
+          <h2 class="text-base font-black mt-1">📋 雙舉陣型（4-2）輪轉與站位模擬</h2>
+        </div>
+      </div>
+
+      <!-- 模式切換鈕 -->
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <button onclick="setCourtMode('serve')" id="mode-serve" class="py-1.5 px-2 rounded-xl border-2 border-ink text-xs font-black bg-vGreen shadow-pop-sm btn-pop">
+          🔄 發球前輪轉站位
+        </button>
+        <button onclick="setCourtMode('defense')" id="mode-defense" class="py-1.5 px-2 rounded-xl border-2 border-ink text-xs font-black bg-white shadow-pop-sm btn-pop">
+          🛡️ 換位後防守聯防
+        </button>
+      </div>
+
+      <!-- 6 輪切換按鈕列 -->
+      <div id="rotationSelector" class="grid grid-cols-6 gap-1.5 mb-3">
+        <button onclick="setRotation(1)" id="rot-1" class="rot-btn py-1 rounded-lg border-2 border-ink text-xs font-black bg-vYellow shadow-pop-sm btn-pop">R1</button>
+        <button onclick="setRotation(2)" id="rot-2" class="rot-btn py-1 rounded-lg border-2 border-ink text-xs font-black bg-white shadow-pop-sm btn-pop">R2</button>
+        <button onclick="setRotation(3)" id="rot-3" class="rot-btn py-1 rounded-lg border-2 border-ink text-xs font-black bg-white shadow-pop-sm btn-pop">R3</button>
+        <button onclick="setRotation(4)" id="rot-4" class="rot-btn py-1 rounded-lg border-2 border-ink text-xs font-black bg-white shadow-pop-sm btn-pop">R4</button>
+        <button onclick="setRotation(5)" id="rot-5" class="rot-btn py-1 rounded-lg border-2 border-ink text-xs font-black bg-white shadow-pop-sm btn-pop">R5</button>
+        <button onclick="setRotation(6)" id="rot-6" class="rot-btn py-1 rounded-lg border-2 border-ink text-xs font-black bg-white shadow-pop-sm btn-pop">R6</button>
+      </div>
+
+      <!-- 排球場視覺化畫布 -->
+      <div class="relative w-full aspect-[4/3] bg-orange-100 border-4 border-ink rounded-2xl overflow-hidden shadow-inner">
+        <!-- 球網 (頂部) -->
+        <div class="w-full h-3 bg-ink flex items-center justify-center">
+          <span class="text-[9px] font-black text-vYellow tracking-widest">━━━ 球網 NET ━━━</span>
+        </div>
+
+        <!-- 三米攻擊線 -->
+        <div class="absolute top-[36%] left-0 right-0 border-b-2 border-dashed border-ink/50 flex justify-between px-2">
+          <span class="text-[9px] font-black text-ink/50">前排攻擊區</span>
+          <span class="text-[9px] font-black text-ink/50">3M 線</span>
+        </div>
+
+        <!-- 後排防守區標示 -->
+        <div class="absolute bottom-1.5 right-2 text-[9px] font-black text-ink/40">後排防守區</div>
+
+        <!-- 6 名球員動態定位點 -->
+        <div id="courtPlayers" class="relative w-full h-[calc(100%-12px)]"></div>
+      </div>
+
+      <!-- 動態戰術解說框 -->
+      <div class="mt-3 bg-cream border-2 border-ink rounded-xl p-3">
+        <div id="tacticHeadline" class="text-xs font-black text-ink mb-1">第 1 輪（R1）：舉球 S1 在後排 1 號位發球</div>
+        <p id="tacticDetail" class="text-xs font-medium text-slate-700 leading-relaxed">
+          前排由「舉球 S2（2號位）、攔中 MB1（3號位）、主攻 OH1（4號位）」組成完美進攻陣型，發球過網後無需大幅換位即可直接攔網！
+        </p>
+      </div>
+
+      <!-- 圖例說明 -->
+      <div class="flex flex-wrap gap-2 mt-3 pt-2 border-t border-slate-200 text-[10px] font-black">
+        <span class="px-2 py-0.5 rounded bg-vYellow border border-ink">S 舉球員</span>
+        <span class="px-2 py-0.5 rounded bg-vOrange border border-ink">OH 主攻手</span>
+        <span class="px-2 py-0.5 rounded bg-vBlue border border-ink">MB 攔中</span>
+      </div>
     </section>
 
-    <!-- 卡片 1：雙舉陣型 -->
-    <section class="bg-white border-2 border-ink rounded-2xl p-4 shadow-pop space-y-2">
-      <div class="flex items-center justify-between">
-        <span class="text-xs font-black px-2 py-0.5 rounded-lg border border-ink bg-vGreen">新手推薦陣型</span>
-        <span class="text-xs font-black text-slate-400">4-2 雙舉系統</span>
+    <!-- 2. 系隊實戰關鍵口訣卡片 -->
+    <section class="bg-white border-2 border-ink rounded-2xl p-4 shadow-pop space-y-2.5">
+      <h3 class="text-sm font-black flex items-center gap-1.5"><span>⚡</span> 系隊實戰三大防呆原則</h3>
+      <div class="bg-cream border-2 border-ink rounded-xl p-2.5 text-xs font-bold">
+        1️⃣ <strong>越位檢查口訣：</strong>發球瞬間「前後不交錯（2對1、3對6、4對5），左右不重疊（4-3-2、5-6-1）」。
       </div>
-      <h3 class="text-base font-black">1. 雙舉球陣型（Double Setter）</h3>
-      <p class="text-xs font-medium text-slate-600 leading-relaxed">
-        場上配置兩名舉球員（對角站位），確保無論如何輪轉，前排永遠有一名舉球員負責組織進攻，大幅降低新手系隊輪轉跑位失誤率。
-      </p>
-      <div class="bg-cream border-2 border-ink rounded-xl p-3 text-xs font-bold space-y-1">
-        <div>🔹 <strong>前排舉球原則：</strong>前排舉球員優先插上二號位舉球，後排舉球員專注防守補位。</div>
-        <div>🔹 <strong>接發球分工：</strong>前排舉球不接一傳，由其餘五人（尤其後排三名防守員）組成接發陣型。</div>
+      <div class="bg-cream border-2 border-ink rounded-xl p-2.5 text-xs font-bold">
+        2️⃣ <strong>雙舉插上原則：</strong>永遠由「前排舉球」負責舉第二球，後排舉球專心守好 1 號位直線與吊球。
       </div>
-    </section>
-
-    <!-- 卡片 2：攔網與防守聯防 -->
-    <section class="bg-white border-2 border-ink rounded-2xl p-4 shadow-pop space-y-2">
-      <div class="flex items-center justify-between">
-        <span class="text-xs font-black px-2 py-0.5 rounded-lg border border-ink bg-vOrange">防守聯防</span>
-        <span class="text-xs font-black text-slate-400">攔網與補位</span>
+      <div class="bg-cream border-2 border-ink rounded-xl p-2.5 text-xs font-bold">
+        3️⃣ <strong>攔網補位分工：</strong>前排雙人併步起跳攔網時，未參與攔網的前排主攻手立刻退至三米線撈吊球。
       </div>
-      <h3 class="text-base font-black">2. 攔網起跳與後排保護</h3>
-      <p class="text-xs font-medium text-slate-600 leading-relaxed">
-        面對對手四號位主攻手扣球時，攔中（MB）需併步靠攏右翼形成雙人攔網，後排六號位則依攔網手形補防吊球或斜線重扣。
-      </p>
-      <div class="bg-cream border-2 border-ink rounded-xl p-3 text-xs font-bold space-y-1">
-        <div>🔸 <strong>攔網口訣：</strong>看球不看人、先併步再垂直起跳、雙手過網壓手腕。</div>
-        <div>🔸 <strong>短球保護：</strong>未參與攔網的另一側前排攻擊手，必須立刻退至三米線附近準備撈吊球。</div>
-      </div>
-    </section>
-
-    <!-- 卡片 3：發球輪轉檢查 -->
-    <section class="bg-white border-2 border-ink rounded-2xl p-4 shadow-pop space-y-2">
-      <div class="flex items-center justify-between">
-        <span class="text-xs font-black px-2 py-0.5 rounded-lg border border-ink bg-vPurple/40">賽前檢核</span>
-        <span class="text-xs font-black text-slate-400">輪轉防呆</span>
-      </div>
-      <h3 class="text-base font-black">3. 輪轉站位防越位檢查</h3>
-      <p class="text-xs font-medium text-slate-600 leading-relaxed">
-        發球瞬間，場上六名球員必須保持「前後對應（2對1、3對6、4對5）」與「左右順序（4-3-2、5-6-1）」，待發球員擊球瞬間才可啟動換位。
-      </p>
     </section>
 
   </main>
@@ -110,5 +141,160 @@
     <p class="text-[11px] font-black text-slate-400">VolleyPlan • 依 AGENTS.md 規範延伸建置</p>
   </footer>
 
+  <script>
+    let currentMode = 'serve';
+    let currentRotation = 1;
+
+    // 座標定義：(left %, top %)
+    const POSITIONS = {
+      p4: { x: 18, y: 18 }, // 前左 4號位
+      p3: { x: 50, y: 18 }, // 前中 3號位
+      p2: { x: 82, y: 18 }, // 前右 2號位
+      p5: { x: 18, y: 68 }, // 後左 5號位
+      p6: { x: 50, y: 74 }, // 後中 6號位
+      p1: { x: 82, y: 68 }  // 後右 1號位
+    };
+
+    const ROTATION_DATA = {
+      1: {
+        title: '第 1 輪（R1）：S1 位於 1 號位發球',
+        detail: '前排剛好是「OH1(4) - MB1(3) - S2(2)」標準攻擊站位！發球後前排完全不用換位，後排 S1 留守 1 號位防守即可。',
+        players: [
+          { role: 'OH1', color: 'bg-vOrange', pos: 'p4' },
+          { role: 'MB1', color: 'bg-vBlue', pos: 'p3' },
+          { role: 'S2',  color: 'bg-vYellow', pos: 'p2' },
+          { role: 'MB2', color: 'bg-vBlue', pos: 'p5' },
+          { role: 'OH2', color: 'bg-vOrange', pos: 'p6' },
+          { role: 'S1',  color: 'bg-vYellow', pos: 'p1' }
+        ]
+      },
+      2: {
+        title: '第 2 輪（R2）：OH1 輪轉至 1 號位發球',
+        detail: '前排為「MB1(4) - S2(3) - S1(2)」。發球過網瞬間，前排 S2 需迅速與 MB1 交換位置，由 S2 負責二號位舉球、MB1 回到中間攔網。',
+        players: [
+          { role: 'MB1', color: 'bg-vBlue', pos: 'p4' },
+          { role: 'S2',  color: 'bg-vYellow', pos: 'p3' },
+          { role: 'OH2', color: 'bg-vOrange', pos: 'p2' },
+          { role: 'S1',  color: 'bg-vYellow', pos: 'p5' },
+          { role: 'MB2', color: 'bg-vBlue', pos: 'p6' },
+          { role: 'OH1', color: 'bg-vOrange', pos: 'p1' }
+        ]
+      },
+      3: {
+        title: '第 3 輪（R3）：MB1 輪轉至 1 號位發球',
+        detail: '前排「S2(4) - OH2(3) - MB2(2)」。發球後前排大換位：S2 衝往 2 號位舉球，OH2 退至 4 號位主攻，MB2 移至 3 號位攔中。',
+        players: [
+          { role: 'S2',  color: 'bg-vYellow', pos: 'p4' },
+          { role: 'OH2', color: 'bg-vOrange', pos: 'p3' },
+          { role: 'MB2', color: 'bg-vBlue', pos: 'p2' },
+          { role: 'OH1', color: 'bg-vOrange', pos: 'p5' },
+          { role: 'S1',  color: 'bg-vYellow', pos: 'p6' },
+          { role: 'MB1', color: 'bg-vBlue', pos: 'p1' }
+        ]
+      },
+      4: {
+        title: '第 4 輪（R4）：S2 輪轉至 1 號位發球',
+        detail: '前排「OH2(4) - MB2(3) - S1(2)」，與第 1 輪形成完美對稱！前排攻擊陣型已就定位，發球後無需換位。',
+        players: [
+          { role: 'OH2', color: 'bg-vOrange', pos: 'p4' },
+          { role: 'MB2', color: 'bg-vBlue', pos: 'p3' },
+          { role: 'S1',  color: 'bg-vYellow', pos: 'p2' },
+          { role: 'MB1', color: 'bg-vBlue', pos: 'p5' },
+          { role: 'OH1', color: 'bg-vOrange', pos: 'p6' },
+          { role: 'S2',  color: 'bg-vYellow', pos: 'p1' }
+        ]
+      },
+      5: {
+        title: '第 5 輪（R5）：OH2 輪轉至 1 號位發球',
+        detail: '前排「MB2(4) - S1(3) - OH1(2)」。發球後 S1 與 OH1 換位至 2 號位舉球，MB2 移回 3 號位準備攔網。',
+        players: [
+          { role: 'MB2', color: 'bg-vBlue', pos: 'p4' },
+          { role: 'S1',  color: 'bg-vYellow', pos: 'p3' },
+          { role: 'OH1', color: 'bg-vOrange', pos: 'p2' },
+          { role: 'S2',  color: 'bg-vYellow', pos: 'p5' },
+          { role: 'MB1', color: 'bg-vBlue', pos: 'p6' },
+          { role: 'OH2', color: 'bg-vOrange', pos: 'p1' }
+        ]
+      },
+      6: {
+        title: '第 6 輪（R6）：MB2 輪轉至 1 號位發球',
+        detail: '前排「S1(4) - OH1(3) - MB1(2)」。發球瞬間 S1 跑向 2 號位舉球，OH1 移至 4 號位，MB1 回到 3 號位攔中。',
+        players: [
+          { role: 'S1',  color: 'bg-vYellow', pos: 'p4' },
+          { role: 'OH1', color: 'bg-vOrange', pos: 'p3' },
+          { role: 'MB1', color: 'bg-vBlue', pos: 'p2' },
+          { role: 'OH2', color: 'bg-vOrange', pos: 'p5' },
+          { role: 'S2',  color: 'bg-vYellow', pos: 'p6' },
+          { role: 'MB2', color: 'bg-vBlue', pos: 'p1' }
+        ]
+      }
+    };
+
+    const DEFENSE_FORMATION = {
+      title: '🛡️ 換位完成：標準防守聯防陣型（心形／邊線防守）',
+      detail: '所有輪次發球過網後，前排固定由「主攻(4) - 攔中(3) - 舉球(2)」負責網前攔網，後排「5號位、6號位、1號位」退至底線前兩步守重扣與長球。',
+      players: [
+        { role: 'OH 主攻', color: 'bg-vOrange', pos: 'p4' },
+        { role: 'MB 攔中', color: 'bg-vBlue', pos: 'p3' },
+        { role: 'S 前舉',  color: 'bg-vYellow', pos: 'p2' },
+        { role: '後排左',  color: 'bg-vBlue', pos: 'p5' },
+        { role: '後排中',  color: 'bg-vOrange', pos: 'p6' },
+        { role: 'S 後舉',  color: 'bg-vYellow', pos: 'p1' }
+      ]
+    };
+
+    function setCourtMode(mode) {
+      currentMode = mode;
+      const btnServe = document.getElementById('mode-serve');
+      const btnDef = document.getElementById('mode-defense');
+      const rotBar = document.getElementById('rotationSelector');
+
+      if (mode === 'serve') {
+        btnServe.classList.replace('bg-white', 'bg-vGreen');
+        btnDef.classList.replace('bg-vGreen', 'bg-white');
+        rotBar.classList.remove('opacity-40', 'pointer-events-none');
+      } else {
+        btnDef.classList.replace('bg-white', 'bg-vGreen');
+        btnServe.classList.replace('bg-vGreen', 'bg-white');
+        rotBar.classList.add('opacity-40', 'pointer-events-none');
+      }
+      renderCourt();
+    }
+
+    function setRotation(rot) {
+      currentRotation = rot;
+      document.querySelectorAll('.rot-btn').forEach(btn => {
+        btn.classList.remove('bg-vYellow');
+        btn.classList.add('bg-white');
+      });
+      const active = document.getElementById(`rot-${rot}`);
+      if (active) {
+        active.classList.remove('bg-white');
+        active.classList.add('bg-vYellow');
+      }
+      renderCourt();
+    }
+
+    function renderCourt() {
+      const container = document.getElementById('courtPlayers');
+      const data = currentMode === 'serve' ? ROTATION_DATA[currentRotation] : DEFENSE_FORMATION;
+
+      document.getElementById('tacticHeadline').innerText = data.title;
+      document.getElementById('tacticDetail').innerText = data.detail;
+
+      container.innerHTML = '';
+      data.players.forEach(p => {
+        const coord = POSITIONS[p.pos];
+        const badge = document.createElement('div');
+        badge.className = `player-badge absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-xl border-2 border-ink font-black text-xs shadow-pop-sm ${p.color}`;
+        badge.style.left = `${coord.x}%`;
+        badge.style.top = `${coord.y}%`;
+        badge.innerText = p.role;
+        container.appendChild(badge);
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', renderCourt);
+  </script>
 </body>
 </html>
