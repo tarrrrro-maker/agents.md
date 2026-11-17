@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>VolleyPlan 🏐 系隊站位與輪轉戰術指南</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream: '#FDFBF7',
+            ink: '#1E293B',
+            vGreen: '#4ADE80',
+            vYellow: '#FACC15',
+            vOrange: '#FB923C',
+            vBlue: '#38BDF8',
+            vPurple: '#C084FC',
+          },
+          boxShadow: {
+            'pop': '3px 3px 0px #1E293B',
+            'pop-sm': '2px 2px 0px #1E293B',
+            'pop-lg': '4px 4px 0px #1E293B',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .btn-pop:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0px #1E293B;
+    }
+  </style>
+</head>
+<body class="bg-cream text-ink font-sans min-h-screen pb-16 select-none">
+
+  <!-- 頂部導覽列（依 AGENTS.md 規範與 index.html 保持一致） -->
+  <header class="max-w-md mx-auto pt-6 px-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-3xl">🏐</span>
+        <h1 class="text-2xl font-black tracking-tight">VolleyPlan</h1>
+      </div>
+      <div class="flex gap-2">
+        <a href="index.html" class="bg-vYellow border-2 border-ink px-3 py-1.5 rounded-xl text-xs font-black shadow-pop-sm btn-pop flex items-center gap-1">
+          <span>← 返回排程器</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto px-4 mt-4 space-y-4">
+
+    <!-- 頁面標題卡 -->
+    <section class="bg-vBlue/30 border-2 border-ink rounded-2xl p-4 shadow-pop">
+      <span class="text-[10px] font-black px-2 py-0.5 rounded-full border border-ink bg-white">系隊戰術手冊</span>
+      <h2 class="text-lg font-black mt-1.5">📋 基礎陣型與輪轉觀念</h2>
+      <p class="text-xs font-bold text-slate-700 mt-1">依照 AGENTS.md 視覺規範擴充之戰術教學分頁，供練球前快速統一全隊站位共識。</p>
+    </section>
+
+    <!-- 卡片 1：雙舉陣型 -->
+    <section class="bg-white border-2 border-ink rounded-2xl p-4 shadow-pop space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-black px-2 py-0.5 rounded-lg border border-ink bg-vGreen">新手推薦陣型</span>
+        <span class="text-xs font-black text-slate-400">4-2 雙舉系統</span>
+      </div>
+      <h3 class="text-base font-black">1. 雙舉球陣型（Double Setter）</h3>
+      <p class="text-xs font-medium text-slate-600 leading-relaxed">
+        場上配置兩名舉球員（對角站位），確保無論如何輪轉，前排永遠有一名舉球員負責組織進攻，大幅降低新手系隊輪轉跑位失誤率。
+      </p>
+      <div class="bg-cream border-2 border-ink rounded-xl p-3 text-xs font-bold space-y-1">
+        <div>🔹 <strong>前排舉球原則：</strong>前排舉球員優先插上二號位舉球，後排舉球員專注防守補位。</div>
+        <div>🔹 <strong>接發球分工：</strong>前排舉球不接一傳，由其餘五人（尤其後排三名防守員）組成接發陣型。</div>
+      </div>
+    </section>
+
+    <!-- 卡片 2：攔網與防守聯防 -->
+    <section class="bg-white border-2 border-ink rounded-2xl p-4 shadow-pop space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-black px-2 py-0.5 rounded-lg border border-ink bg-vOrange">防守聯防</span>
+        <span class="text-xs font-black text-slate-400">攔網與補位</span>
+      </div>
+      <h3 class="text-base font-black">2. 攔網起跳與後排保護</h3>
+      <p class="text-xs font-medium text-slate-600 leading-relaxed">
+        面對對手四號位主攻手扣球時，攔中（MB）需併步靠攏右翼形成雙人攔網，後排六號位則依攔網手形補防吊球或斜線重扣。
+      </p>
+      <div class="bg-cream border-2 border-ink rounded-xl p-3 text-xs font-bold space-y-1">
+        <div>🔸 <strong>攔網口訣：</strong>看球不看人、先併步再垂直起跳、雙手過網壓手腕。</div>
+        <div>🔸 <strong>短球保護：</strong>未參與攔網的另一側前排攻擊手，必須立刻退至三米線附近準備撈吊球。</div>
+      </div>
+    </section>
+
+    <!-- 卡片 3：發球輪轉檢查 -->
+    <section class="bg-white border-2 border-ink rounded-2xl p-4 shadow-pop space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-black px-2 py-0.5 rounded-lg border border-ink bg-vPurple/40">賽前檢核</span>
+        <span class="text-xs font-black text-slate-400">輪轉防呆</span>
+      </div>
+      <h3 class="text-base font-black">3. 輪轉站位防越位檢查</h3>
+      <p class="text-xs font-medium text-slate-600 leading-relaxed">
+        發球瞬間，場上六名球員必須保持「前後對應（2對1、3對6、4對5）」與「左右順序（4-3-2、5-6-1）」，待發球員擊球瞬間才可啟動換位。
+      </p>
+    </section>
+
+  </main>
+
+  <footer class="max-w-md mx-auto px-4 mt-8 text-center">
+    <p class="text-[11px] font-black text-slate-400">VolleyPlan • 依 AGENTS.md 規範延伸建置</p>
+  </footer>
+
+</body>
+</html>
