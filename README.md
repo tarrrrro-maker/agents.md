@@ -2,7 +2,7 @@
 
 專為大學排球系隊設計的行動優先（Mobile-First）練球菜單生成器與互動式戰術指南。本專案透過建立 `AGENTS.md` 開發規範，統一新粗野主義（Neo-Brutalism）卡片視覺與資料架構，並依循該規範延伸建置了互動式輪轉戰術板。
 
-* **線上網頁展示**：`https://tarrrrro-maker.github.io/你的專案名稱/`
+* **線上網頁展示**：`[https://tarrrrro-maker.github.io/agents.md/index.html]`
 * **AI 開發規範書**：詳見根目錄 [`AGENTS.md`](./AGENTS.md)
 
 ## 專案結構
