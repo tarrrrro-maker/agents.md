@@ -4,11 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>VolleyPlan 🏐 系隊練球菜單生成器</title>
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- SortableJS for Touch Drag & Drop -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-  <!-- html2canvas for Image Generation -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <script>
@@ -49,7 +46,6 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
-    /* 專門保證圖片算繪絕對精準的穩定樣式 */
     .render-row {
       display: table !important;
       width: 100% !important;
@@ -65,7 +61,6 @@
 </head>
 <body class="bg-cream text-ink font-sans min-h-screen pb-32 select-none">
 
-  <!-- 頂部標題與庫入口 -->
   <header class="max-w-md mx-auto pt-6 px-4">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
@@ -76,7 +71,6 @@
         <a href="tactics.html" class="bg-vBlue/30 border-2 border-ink px-2.5 py-1.5 rounded-xl text-xs font-black shadow-pop-sm btn-pop flex items-center gap-1">
           <span>📋 戰術</span>
         </a>
-        <!-- 修正後的重置按鈕：只重置今日排程，不碰菜單庫 -->
         <button onclick="resetCurrentPlan()" class="bg-slate-100 border-2 border-ink px-2.5 py-1.5 rounded-xl text-xs font-black shadow-pop-sm btn-pop" title="只重置今日排程">
           🔄 重置
         </button>
@@ -87,10 +81,8 @@
     </div>
   </header>
 
-  <!-- 主要操作容器 -->
   <main class="max-w-md mx-auto px-4 mt-4 space-y-4">
 
-    <!-- 1. 設定控制台面板 -->
     <section class="bg-white border-2 border-ink rounded-2xl p-4 shadow-pop">
       <div class="grid grid-cols-2 gap-3 mb-3">
         <div>
@@ -123,7 +115,6 @@
         </div>
       </div>
 
-      <!-- 訓練主題膠囊選單 -->
       <div>
         <label class="block text-xs font-black text-slate-500 mb-2">🎯 快速套用主題（依總時間智慧調整）</label>
         <div class="grid grid-cols-2 gap-2">
@@ -147,7 +138,6 @@
       </button>
     </section>
 
-    <!-- 2. 即時時間統計進度條 -->
     <section class="bg-white border-2 border-ink rounded-2xl p-3 shadow-pop-sm">
       <div class="flex justify-between items-center text-xs font-black mb-1.5">
         <span class="flex items-center gap-1">⏱️ 今日菜單時間進度</span>
@@ -158,7 +148,6 @@
       </div>
     </section>
 
-    <!-- 3. 今日菜單列表 (積木) -->
     <section class="space-y-2.5">
       <div class="flex justify-between items-center px-1">
         <span class="text-xs font-black text-slate-500">📋 今日排程（長按 ⠿ 拖曳排序）</span>
@@ -181,7 +170,6 @@
 
   </main>
 
-  <!-- 4. 手機底部固定操作列 -->
   <footer class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t-2 border-ink p-3 z-20">
     <div class="max-w-md mx-auto grid grid-cols-2 gap-3">
       <button onclick="copyLineFormat()" class="bg-vGreen border-2 border-ink py-2.5 px-3 rounded-xl font-black text-xs shadow-pop btn-pop flex items-center justify-center gap-1">
@@ -193,9 +181,9 @@
     </div>
   </footer>
 
-  <!-- 彈窗 A：完整菜單庫與管理 -->
+  <!-- 彈窗 A：固定高度 h-[82vh]，解決切換分類時視窗忽大忽小的問題 -->
   <div id="libraryModal" class="fixed inset-0 bg-ink/50 backdrop-blur-sm z-40 hidden flex items-end sm:items-center justify-center">
-    <div class="bg-cream border-t-4 sm:border-4 border-ink rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[85vh] flex flex-col shadow-pop-lg overflow-hidden">
+    <div class="bg-cream border-t-4 sm:border-4 border-ink rounded-t-3xl sm:rounded-3xl w-full max-w-md h-[82vh] flex flex-col shadow-pop-lg overflow-hidden">
       <div class="p-4 bg-white border-b-2 border-ink flex justify-between items-center flex-shrink-0">
         <div>
           <h2 class="text-lg font-black flex items-center gap-1.5"><span>📚</span> 訓練項目菜單庫</h2>
@@ -226,7 +214,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 B：項目詳細說明與操作要領 -->
+  <!-- 彈窗 B：項目詳細說明 -->
   <div id="drillDetailModal" class="fixed inset-0 bg-ink/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white border-4 border-ink rounded-3xl w-full max-w-sm p-5 shadow-pop-lg relative max-h-[80vh] flex flex-col">
       <div class="flex justify-between items-start mb-3">
@@ -260,7 +248,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 C：新增/編輯菜單庫項目 -->
+  <!-- 彈窗 C：新增/編輯項目 -->
   <div id="editDrillModal" class="fixed inset-0 bg-ink/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white border-4 border-ink rounded-3xl w-full max-w-sm p-5 shadow-pop-lg">
       <h3 id="editModalHeader" class="text-base font-black mb-3">✏️ 編輯訓練項目</h3>
@@ -312,37 +300,21 @@
     </div>
   </div>
 
-  <!-- Toast 提示 -->
   <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-ink text-white text-xs font-bold px-4 py-2 rounded-full border-2 border-vYellow shadow-pop-lg transition-all duration-300 opacity-0 pointer-events-none z-50">
     提示訊息
   </div>
 
-  <!-- ==================== 徹底解決文字位移的圖片算繪容器 ==================== -->
   <div style="position: absolute; left: 0; top: 0; z-index: -9999; visibility: hidden; pointer-events: none;">
     <div id="exportCardWrapper" style="width: 380px; box-sizing: border-box; background-color: #FDFBF7; border: 4px solid #1E293B; border-radius: 24px; padding: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-      
-      <!-- 頂部標題框 -->
       <div style="background-color: #FACC15; border: 2px solid #1E293B; border-radius: 16px; padding: 12px; text-align: center; margin-bottom: 12px; box-shadow: 2px 2px 0px #1E293B;">
-        <div style="font-size: 22px; font-weight: 900; line-height: 28px; color: #1E293B;">
-          🏐 練球菜單
-        </div>
-        <div id="cardDateHeader" style="font-size: 11px; font-weight: 800; color: #334155; margin-top: 4px; line-height: 16px;">
-          2026-10-20 • 18:00 - 20:00 (120m)
-        </div>
+        <div style="font-size: 22px; font-weight: 900; line-height: 28px; color: #1E293B;">🏐 練球菜單</div>
+        <div id="cardDateHeader" style="font-size: 11px; font-weight: 800; color: #334155; margin-top: 4px; line-height: 16px;">2026-10-20 • 18:00 - 20:00 (120m)</div>
       </div>
-      
-      <!-- 狀態欄 -->
       <div style="background-color: #FFFFFF; border: 2px solid #1E293B; border-radius: 12px; padding: 8px 12px; margin-bottom: 12px; box-shadow: 2px 2px 0px #1E293B; display: table; width: 100%; box-sizing: border-box;">
         <div id="cardThemeText" style="display: table-cell; font-size: 11px; font-weight: 800; color: #1E293B;">🎯 項目數：共 9 項</div>
         <div id="cardHeadcountText" style="display: table-cell; text-align: right; font-size: 11px; font-weight: 800; color: #1E293B;">👥 出席：12 人</div>
       </div>
-
-      <!-- 菜單時間軸清單 (採用 table-cell 垂直居中，100% 杜絕壓扁與切字) -->
-      <div id="cardTimelineItems" style="width: 100%;">
-        <!-- JS 動態插入 -->
-      </div>
-
-      <!-- 底部標語 -->
+      <div id="cardTimelineItems" style="width: 100%;"></div>
       <div style="text-align: center; font-size: 10px; font-weight: 800; color: #94A3B8; margin-top: 14px; padding-top: 10px; border-top: 2px dashed #CBD5E1;">
         VolleyPlan • 準時到場，熱身做足！💪
       </div>
@@ -418,7 +390,6 @@
       }
     }
 
-    // 安全重置：只重置今日排程，絕對不動你的菜單庫！
     function resetCurrentPlan() {
       if (confirm('確定要將今日排程恢復為預設狀態嗎？（放心，你自訂的菜單庫不會被清空）')) {
         generatePlan();
@@ -459,12 +430,11 @@
       }
     });
 
-    // 動態總時長與輪替演算法
     function generatePlan() {
       const targetDuration = parseInt(document.getElementById('selectDuration').value) || 120;
       
       const warmups = drillDatabase.filter(d => d.category === 'warmup');
-      const warmupTotal = warmups.reduce((acc, cur) => acc + cur.duration, 0); // 25m
+      const warmupTotal = warmups.reduce((acc, cur) => acc + cur.duration, 0);
       
       const coolDownDuration = targetDuration <= 90 ? 10 : 15;
       const cooldownItem = drillDatabase.find(d => d.id === 'b5') || {
@@ -876,7 +846,6 @@
       });
     }
 
-    // --- 完全重寫的卡片截圖邏輯：純表格佈局，不依賴 flex，100% 杜絕壓扁切字 ---
     function exportCardImage() {
       showToast('正在產生精美圖卡...⏳');
 
@@ -897,7 +866,6 @@
         const next = addMinutesToTime(cur, item.duration);
         const groupHint = getGroupHint(item.groupType, headcount);
 
-        // 使用標準 HTML Table 結構，徹底根除手機截圖高度坍塌問題
         const row = document.createElement('div');
         row.style.cssText = 'background-color: #FFFFFF; border: 2px solid #1E293B; border-radius: 12px; margin-bottom: 6px; padding: 0 8px; box-shadow: 2px 2px 0px #1E293B;';
         row.className = 'render-row';
@@ -926,7 +894,6 @@
       const element = document.getElementById('exportCardWrapper');
       const parentContainer = element.parentElement;
 
-      // 暫時解除隱藏
       parentContainer.style.visibility = 'visible';
 
       html2canvas(element, {
