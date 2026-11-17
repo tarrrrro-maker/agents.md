@@ -729,4 +729,225 @@
       document.getElementById('detailTitle').innerText = target.name;
       document.getElementById('detailCategoryBadge').innerText = getCategoryName(target.category);
       document.getElementById('detailCategoryBadge').className = `text-[10px] font-black px-2 py-0.5 rounded-full border border-ink ${getCategoryBadgeColor(target.category)}`;
-      document.getElementById('detailDuration').
+      document.getElementById('detailDuration').innerText = `${target.duration} 分鐘`;
+
+      const groupMap = { none: '不需分組 / 全員一起', pair: '兩人一組', trio: '三人一組', six: '6 vs 6 隊形' };
+      document.getElementById('detailGroupType').innerText = groupMap[target.groupType] || '自由練習';
+      document.getElementById('detailDescription').innerText = target.desc || '尚無詳細操作說明。點擊下方「編輯修改」即可補充！';
+
+      document.getElementById('btnEditFromDetail').onclick = () => {
+        closeDrillDetailModal();
+        openEditDrillModal(target.id);
+      };
+
+      document.getElementById('btnAddFromDetail').onclick = () => {
+        addDrillToTimeline(target.id);
+        closeDrillDetailModal();
+      };
+
+      document.getElementById('drillDetailModal').classList.remove('hidden');
+    }
+
+    function closeDrillDetailModal() {
+      document.getElementById('drillDetailModal').classList.add('hidden');
+    }
+
+    function openEditDrillModal(id) {
+      editingDrillId = id;
+      const modalHeader = document.getElementById('editModalHeader');
+
+      if (id) {
+        modalHeader.innerText = '✏️ 編輯訓練項目';
+        const target = drillDatabase.find(d => d.id === id);
+        if (target) {
+          document.getElementById('editDrillName').value = target.name || '';
+          document.getElementById('editDrillCategory').value = target.category || 'custom';
+          document.getElementById('editDrillDuration').value = target.duration || 15;
+          document.getElementById('editDrillGroupType').value = target.groupType || 'none';
+          document.getElementById('editDrillDescription').value = target.desc || '';
+        }
+      } else {
+        modalHeader.innerText = '✨ 建立全新自訂項目';
+        document.getElementById('editDrillName').value = '';
+        document.getElementById('editDrillCategory').value = 'custom';
+        document.getElementById('editDrillDuration').value = 15;
+        document.getElementById('editDrillGroupType').value = 'none';
+        document.getElementById('editDrillDescription').value = '';
+      }
+
+      document.getElementById('editDrillModal').classList.remove('hidden');
+    }
+
+    function closeEditDrillModal() {
+      document.getElementById('editDrillModal').classList.add('hidden');
+    }
+
+    function saveDrillItem() {
+      const name = document.getElementById('editDrillName').value.trim();
+      if (!name) {
+        alert('請填寫項目名稱！');
+        return;
+      }
+
+      const cat = document.getElementById('editDrillCategory').value;
+      const dur = parseInt(document.getElementById('editDrillDuration').value) || 15;
+      const grp = document.getElementById('editDrillGroupType').value;
+      const desc = document.getElementById('editDrillDescription').value.trim();
+
+      if (editingDrillId) {
+        const index = drillDatabase.findIndex(d => d.id === editingDrillId);
+        if (index !== -1) {
+          drillDatabase[index] = {
+            ...drillDatabase[index],
+            name,
+            category: cat,
+            duration: dur,
+            groupType: grp,
+            desc: desc,
+            color: getCategoryBadgeColor(cat)
+          };
+        }
+        timelineItems.forEach(t => {
+          if (t.id === editingDrillId) {
+            t.name = name;
+            t.duration = dur;
+            t.groupType = grp;
+            t.desc = desc;
+          }
+        });
+        showToast('項目修改成功！💾');
+      } else {
+        const newId = 'custom_' + Date.now();
+        const newItem = {
+          id: newId,
+          name,
+          category: cat,
+          duration: dur,
+          groupType: grp,
+          desc: desc,
+          color: getCategoryBadgeColor(cat)
+        };
+        drillDatabase.push(newItem);
+        showToast('已新增至菜單庫！🎉');
+      }
+
+      saveDatabase();
+      closeEditDrillModal();
+      renderLibrary();
+      renderTimeline();
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      toast.innerText = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2200);
+    }
+
+    function copyLineFormat() {
+      const dateVal = document.getElementById('inputDate').value;
+      const startTime = document.getElementById('inputStartTime').value;
+      const totalDuration = timelineItems.reduce((acc, cur) => acc + cur.duration, 0);
+      const endTime = addMinutesToTime(startTime, totalDuration);
+
+      let text = `【🏐 今日練球菜單】\n`;
+      text += `📅 日期：${dateVal}\n`;
+      text += `⏰ 時間：${startTime} - ${endTime} (${totalDuration} min)\n`;
+      text += `👥 出席：${headcount} 人\n\n`;
+      text += `📋 流程規劃：\n`;
+
+      let cur = startTime;
+      timelineItems.forEach(item => {
+        const next = addMinutesToTime(cur, item.duration);
+        const groupHint = getGroupHint(item.groupType, headcount);
+        text += `${cur} - ${next} (${item.duration}m) ${item.name}${groupHint ? ` [${groupHint}]` : ''}\n`;
+        cur = next;
+      });
+
+      text += `\n請大家準時到場，熱身做足！💪`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('已複製 LINE 格式文字！🏐');
+      }).catch(() => {
+        showToast('複製失敗，請手動選取');
+      });
+    }
+
+    // --- 完全重寫的卡片截圖邏輯：純表格佈局，不依賴 flex，100% 杜絕壓扁切字 ---
+    function exportCardImage() {
+      showToast('正在產生精美圖卡...⏳');
+
+      const dateVal = document.getElementById('inputDate').value;
+      const startTime = document.getElementById('inputStartTime').value;
+      const totalDuration = timelineItems.reduce((acc, cur) => acc + cur.duration, 0);
+      const endTime = addMinutesToTime(startTime, totalDuration);
+
+      document.getElementById('cardDateHeader').innerText = `${dateVal} • ${startTime} - ${endTime} (${totalDuration}m)`;
+      document.getElementById('cardThemeText').innerText = `🎯 項目數：共 ${timelineItems.length} 項`;
+      document.getElementById('cardHeadcountText').innerText = `👥 出席：${headcount} 人`;
+
+      const cardItemsContainer = document.getElementById('cardTimelineItems');
+      cardItemsContainer.innerHTML = '';
+
+      let cur = startTime;
+      timelineItems.forEach(item => {
+        const next = addMinutesToTime(cur, item.duration);
+        const groupHint = getGroupHint(item.groupType, headcount);
+
+        // 使用標準 HTML Table 結構，徹底根除手機截圖高度坍塌問題
+        const row = document.createElement('div');
+        row.style.cssText = 'background-color: #FFFFFF; border: 2px solid #1E293B; border-radius: 12px; margin-bottom: 6px; padding: 0 8px; box-shadow: 2px 2px 0px #1E293B;';
+        row.className = 'render-row';
+        row.innerHTML = `
+          <div class="render-cell" style="width: 50px;">
+            <span style="font-size: 10px; font-weight: 900; background-color: #F1F5F9; border: 1px solid #1E293B; border-radius: 4px; padding: 2px 4px; display: inline-block; line-height: 12px; color: #1E293B;">
+              ${cur}
+            </span>
+          </div>
+          <div class="render-cell" style="padding-left: 6px; text-align: left;">
+            <div style="font-size: 11px; font-weight: 900; color: #1E293B; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;">
+              ${item.name}
+            </div>
+          </div>
+          <div class="render-cell" style="text-align: right; width: 110px;">
+            ${groupHint ? `<span style="font-size: 9px; font-weight: 800; background-color: #F3E8FF; color: #581C87; border: 1px solid #C084FC; border-radius: 4px; padding: 1px 4px; margin-right: 4px; display: inline-block; line-height: 12px;">${groupHint}</span>` : ''}
+            <span style="font-size: 10px; font-weight: 900; color: #64748B; display: inline-block; min-width: 24px; text-align: right; line-height: 12px;">
+              ${item.duration}m
+            </span>
+          </div>
+        `;
+        cardItemsContainer.appendChild(row);
+        cur = next;
+      });
+
+      const element = document.getElementById('exportCardWrapper');
+      const parentContainer = element.parentElement;
+
+      // 暫時解除隱藏
+      parentContainer.style.visibility = 'visible';
+
+      html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#FDFBF7',
+        useCORS: true,
+        logging: false
+      }).then(canvas => {
+        parentContainer.style.visibility = 'hidden';
+
+        const link = document.createElement('a');
+        link.download = `練球菜單_${dateVal}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast('圖片已下載完成！🖼️');
+      }).catch(err => {
+        parentContainer.style.visibility = 'hidden';
+        showToast('生成失敗，請重試');
+        console.error(err);
+      });
+    }
+  </script>
+</body>
+</html>
